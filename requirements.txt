@@ -1,0 +1,15 @@
+
+# Core LangChain packages (2025-era split)
+langchain>=0.2.16
+langchain-openai>=0.1.7
+langchain-community>=0.2.16
+
+# OpenAI SDK & tokenization
+openai>=1.40.0
+tiktoken>=0.7.0
+
+# Vector store
+faiss-cpu>=1.8.0.post1
+
+# Utilities
+python-dotenv>=1.0.1
