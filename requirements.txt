@@ -13,3 +13,6 @@ faiss-cpu>=1.8.0.post1
 
 # Utilities
 python-dotenv>=1.0.1
+
+# PDF parsing
+pypdf>=4.0.0
