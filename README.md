@@ -2,10 +2,10 @@
 This project is the FinTech MQP for Quantifi. Its purpose is to lead the AI transformation at Quantifi.
 
 
-# RAG Basic Example
+# RAG Implementation
 
 This repository contains a minimal **Retrieval-Augmented Generation (RAG)** pipeline built with [LangChain](https://python.langchain.com/docs/tutorials/rag/).  
-It loads local `.txt` documents (or uses demo text), splits them into chunks, embeds them with OpenAI embeddings, indexes them in a FAISS vector store, and uses a simple LCEL RAG chain to answer questions.
+It loads local `.txt` and `.pdf` documents (or uses demo text), splits them into chunks, embeds them with OpenAI embeddings, indexes them in a FAISS vector store, and uses a simple LCEL RAG chain to answer questions.
 
 ---
 
@@ -29,7 +29,7 @@ export OPENAI_API_KEY=your_api_key_here  # PowerShell: $env:OPENAI_API_KEY="your
 
 ### 4. Run the Script
 ```bash
-python rag_basic.py "What is RAG and why is a vector store useful?"
+python rag_basic.py "What is the DEI policy at Quantifi?"
 ```
 
 ---
