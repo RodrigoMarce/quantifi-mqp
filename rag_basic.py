@@ -22,6 +22,7 @@ Notes:
 
 import os
 import glob
+import pandas as pd
 from typing import List
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -54,6 +55,14 @@ def load_documents() -> List[Document]:
         for d in pdf_docs:
             d.metadata["source"] = os.path.basename(p)
         docs.extend(pdf_docs)
+
+    # Load .csv files
+    csv_paths = sorted(glob.glob("docs/*.csv"))
+    for p in csv_paths:
+        df = pd.read_csv(p)
+        for _, row in df.iterrows():
+            content = "\n".join([f"{col}: {val}" for col, val in row.items()])
+            docs.append(Document(page_content=content, metadata={"source": os.path.basename(p)}))
 
     # Fallback demo docs if no files found
     if not docs:
