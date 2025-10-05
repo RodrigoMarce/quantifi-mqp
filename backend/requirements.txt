@@ -16,3 +16,7 @@ python-dotenv>=1.0.1
 
 # PDF parsing
 pypdf>=4.0.0
+
+# Flask API server
+flask>=3.0.0
+flask-cors>=4.0.0
