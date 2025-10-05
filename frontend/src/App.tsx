@@ -117,7 +117,9 @@ function App() {
                   : 'bg-white text-gray-900 border border-gray-200'
               }`}
             >
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              <p className={`text-sm whitespace-pre-wrap ${
+                message.sender === 'bot' ? 'text-left' : ''
+              }`}>{message.content}</p>
               <p className={`text-xs mt-1 ${
                 message.sender === 'user' ? 'text-red-100' : 'text-gray-500'
               }`}>
