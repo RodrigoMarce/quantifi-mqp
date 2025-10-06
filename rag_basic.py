@@ -22,11 +22,12 @@ Notes:
 
 import os
 import glob
+import hashlib
+import pandas as pd
 from typing import List
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -34,6 +35,9 @@ from langchain_core.runnables import RunnablePassthrough
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.document_loaders import PyPDFLoader
+
+VECTORSTORE_PATH = "vectorstore.faiss"
+HASH_PATH = "vectorstore.hash"
 
 def load_documents() -> List[Document]:
     """Load .txt and .pdf files from ./docs; fallback to small demo docs."""
@@ -55,6 +59,14 @@ def load_documents() -> List[Document]:
             d.metadata["source"] = os.path.basename(p)
         docs.extend(pdf_docs)
 
+    # Load .csv files
+    csv_paths = sorted(glob.glob("docs/*.csv"))
+    for p in csv_paths:
+        df = pd.read_csv(p)
+        for _, row in df.iterrows():
+            content = "\n".join([f"{col}: {val}" for col, val in row.items()])
+            docs.append(Document(page_content=content, metadata={"source": os.path.basename(p)}))
+
     # Fallback demo docs if no files found
     if not docs:
         sample_texts = [
@@ -67,13 +79,32 @@ def load_documents() -> List[Document]:
 
     return docs
 
+def compute_docs_metadata_hash() -> str:
+    """Hash based only on file names, sizes, and modification times."""
+    m = hashlib.md5()
+    for path in sorted(glob.glob("docs/*")):
+        if os.path.isfile(path):
+            stat = os.stat(path)
+            m.update(path.encode("utf-8"))
+            m.update(str(stat.st_size).encode("utf-8"))
+            m.update(str(int(stat.st_mtime)).encode("utf-8"))
+    return m.hexdigest()
+
 
 def build_vectorstore(chunks: List[Document]) -> FAISS:
-    """Create a FAISS vector store from document chunks."""
-    embeddings = OpenAIEmbeddings()  # uses OPENAI_API_KEY
-    # Build from documents (simple path; for larger corpora consider incremental add/serialize to disk)
+    """Load a saved FAISS vector store if hash matches; otherwise rebuild."""
+    embeddings = OpenAIEmbeddings()
+    print("Building new vector store...")
     vs = FAISS.from_documents(chunks, embeddings)
+    vs.save_local(VECTORSTORE_PATH)
     return vs
+
+
+def load_vectorstore() -> FAISS:
+    """Load an existing FAISS vectorstore."""
+    print("Loading existing vector store...")
+    embeddings = OpenAIEmbeddings()
+    return FAISS.load_local(VECTORSTORE_PATH, embeddings, allow_dangerous_deserialization=True)
 
 
 def format_docs(docs: List[Document]) -> str:
@@ -124,19 +155,29 @@ def main():
     else:
         question = "What is RAG and why is a vector store useful?"
 
-    print("\n[1/4] Loading documents...")
-    docs = load_documents()
+    print("Loading documents...")
+    docs_meta_hash = compute_docs_metadata_hash()
+    
+    saved_hash = None
+    if os.path.exists(HASH_PATH):
+        with open(HASH_PATH, "r") as f:
+            saved_hash = f.read()
 
-    print(f"Loaded {len(docs)} document(s). Splitting into chunks...")
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100,
-        separators=["\n\n", "\n", " ", ""],
-    )
-    chunks = splitter.split_documents(docs)
-    print(f"Created {len(chunks)} chunk(s). Building vector store...")
+    # Decide whether to rebuild database
+    rebuild_needed = not (os.path.exists(VECTORSTORE_PATH) and saved_hash == docs_meta_hash)
 
-    vs = build_vectorstore(chunks)
+    if rebuild_needed:
+        print("Detected new or modified documents. Rebuilding vectorstore...")
+        docs = load_documents()
+        print(f"Loaded {len(docs)} document(s). Splitting into chunks...")
+        splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+        chunks = splitter.split_documents(docs)
+        print(f"Created {len(chunks)} chunk(s).")
+        vs = build_vectorstore(chunks)
+        with open(HASH_PATH, "w") as f:
+            f.write(docs_meta_hash)
+    else:
+        vs = load_vectorstore()
     print("Vector store ready. Building RAG chain...")
 
     chain = build_rag_chain(vs)
