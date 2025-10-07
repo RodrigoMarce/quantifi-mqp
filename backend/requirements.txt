@@ -23,3 +23,6 @@ flask-cors>=4.0.0
 
 # CSV parsing
 pandas>=2.0.3
+
+# Financial data
+yfinance>=0.2.40
