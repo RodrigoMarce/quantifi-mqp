@@ -40,18 +40,18 @@ VECTORSTORE_PATH = "vectorstore.faiss"
 HASH_PATH = "vectorstore.hash"
 
 def load_documents() -> List[Document]:
-    """Load .txt and .pdf files from ./docs; fallback to small demo docs."""
+    """Load .txt and .pdf files from ../docs; fallback to small demo docs."""
     docs: List[Document] = []
 
     # Load .txt files
-    txt_paths = sorted(glob.glob("docs/*.txt"))
+    txt_paths = sorted(glob.glob("../docs/*.txt"))
     for p in txt_paths:
         with open(p, "r", encoding="utf-8") as f:
             text = f.read()
         docs.append(Document(page_content=text, metadata={"source": os.path.basename(p)}))
 
     # Load .pdf files
-    pdf_paths = sorted(glob.glob("docs/*.pdf"))
+    pdf_paths = sorted(glob.glob("../docs/*.pdf"))
     for p in pdf_paths:
         loader = PyPDFLoader(p)
         pdf_docs = loader.load()
